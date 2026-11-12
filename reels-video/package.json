@@ -1,0 +1,15 @@
+{
+  "name": "bigmove-reels-video",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Phase1Pk out/bigmove-reels-phase1-pk.mp4",
+    "render:be": "remotion render BeVsPhase1 out/bigmove-reels-be-vs-phase1.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.542",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.542"
+  }
+}

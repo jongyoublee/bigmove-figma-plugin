@@ -1,47 +1,42 @@
-# 빅무브 카드뉴스 Figma 플러그인
+# 빅무브 카드뉴스·릴스 도구
 
-CSV(장별 문구)와 캡션을 붙여 넣으면 빅무브 카드뉴스(1080×1350) 여러 장과 캡션 프레임을 한 번에 만든다.
+빅무브 인스타그램 카드뉴스(Figma 플러그인)와 설명 릴스(Remotion 영상), 릴스 스토리보드를 만드는 도구.
+**Claude Code로 쓰는 것을 전제로 한다.** 이 폴더를 Claude Code로 열면 `CLAUDE.md`를 읽고 아래 준비를 대신 해 준다.
 
-> 이 저장소는 배포용이다. 원본은 빅무브 작업 저장소에 있고, 바뀌면 여기에 다시 올린다. 여기서 직접 고치지 말 것 (다음 배포 때 덮어써진다).
+> 배포용 저장소다. 원본은 빅무브 작업 저장소에 있고 바뀌면 여기에 다시 올린다. 여기서 고친 내용은 다음 배포 때 덮어써진다. 고칠 점은 빅무브 담당자에게 알린다.
 
-## 처음 한 번 준비 (PC마다)
-1. **Figma 파일 사본 만들기:** 받은 Figma 링크를 열고 파일 이름 옆 ▼ → **Duplicate to your drafts**. 내 사본에서 작업하므로 원본은 바뀌지 않는다.
-2. **글꼴 NanumSquare Neo 설치** (네이버 무료 글꼴): [네이버 공식 페이지](https://campaign.naver.com/nanumsquare_neo/)에서 받아 압축을 풀고, **`TTF` 폴더의 글꼴 5개**(Light·Regular·Bold·ExtraBold·Heavy)를 모두 선택 → 오른쪽 클릭 → 설치. `Variable` 파일만 깔면 Figma가 못 찾는다. 설치 뒤 Figma를 껐다 켠다.
-3. **이 저장소 받기:** `git clone` (또는 GitHub에서 Code → Download ZIP 후 압축 풀기).
-4. **플러그인 등록:** Figma **데스크톱 앱**에서 사본 파일을 열고 메뉴 → Plugins → Development → **Import plugin from manifest...** → 이 폴더의 `manifest.json` 선택. (브라우저 Figma에서는 개발 중 플러그인이 실행되지 않는다.)
+| 폴더 | 내용 |
+|---|---|
+| `figma-carousel/` | Figma 플러그인 (카드뉴스 만들기, 릴스 스토리보드 넣기). 자세한 사용법은 그 폴더 README |
+| `reels-video/` | 설명 릴스 영상 코드 (Remotion). 스토리보드 정지 화면도 여기서 뽑는다 |
 
-실행: **Ctrl + /** → "빅무브" 입력 → Enter. 방금 쓴 플러그인은 **Ctrl + Alt + P**로 다시 연다.
+## 설치할 것 (Windows 기준, PC마다 한 번)
+| 무엇 | 왜 | 받는 곳 |
+|---|---|---|
+| Figma 데스크톱 앱 | 개발 중 플러그인은 브라우저 Figma에서 실행되지 않음 | https://www.figma.com/downloads/ |
+| Git | 이 저장소 받기·업데이트 | https://git-scm.com/download/win |
+| Python 3 | 플러그인에 내용 미리 넣기(`make_preset.py`), 효과음 자르기 | https://www.python.org/downloads/ (설치 때 "Add python.exe to PATH" 체크) |
+| Node.js LTS | 릴스 영상·스토리보드 정지 화면 만들기 | https://nodejs.org/ |
+| 글꼴 NanumSquare Neo | 카드뉴스 글꼴. **`TTF` 폴더의 정적 글꼴 5개**를 설치 (`Variable`만 깔면 Figma가 못 찾음) | https://campaign.naver.com/nanumsquare_neo/ |
+| 글꼴 Noto Sans KR | 지금 있는 릴스 2개의 글꼴 | https://fonts.google.com/noto/specimen/Noto+Sans+KR |
+
+설치 뒤 Figma를 껐다 켠다. 그다음:
+```
+git clone https://github.com/jongyoublee/bigmove-figma-plugin.git
+cd bigmove-figma-plugin/reels-video
+npm install
+```
+
+## Figma 준비
+1. 빅무브 담당자에게 받은 Figma 링크를 열고 파일 이름 옆 ▼ → **Duplicate to your drafts** (내 사본에서 작업, 원본은 안 바뀜).
+2. Figma 데스크톱 앱에서 사본을 열고 메뉴 → Plugins → Development → **Import plugin from manifest...** → `figma-carousel/manifest.json`.
+3. 실행: **Ctrl + /** → "빅무브" → Enter. 방금 쓴 플러그인은 **Ctrl + Alt + P**.
+
+## 효과음 (영상에 소리를 넣을 때)
+Pixabay 효과음은 파일을 다시 배포할 수 없어서 이 저장소에 없다. 직접 받아 `reels-video/public/sfx/`에 **같은 이름으로** 넣는다 (Pixabay에서 이름 끝 숫자로 검색, 무료·상업용 가능·출처 표기 불필요).
+- 영상에 쓰는 것: `dragon-studio-clean-minimal-pop-467466.mp3`, `dragon-studio-simple-whoosh-382724.mp3`, `dragon-studio-spacebar-tap-376870.mp3`, `freesound_community-ding-101492.mp3`, `freesound_community-swallowing-104582.mp3`, `freesound_community-aspirin-in-water-16738.mp3`
+- 넣은 뒤 `reels-video`에서 `python cut_sfx.py` (삼킴·녹는 소리를 잘라 `public/sfx/cut/`에 만든다)
+- 파일이 없으면 Studio에서 소리만 빠지거나 렌더링이 멈춘다. 소리 없이 뽑으려면 `npx remotion render <ID> out/<ID>.mp4 --muted`
 
 ## 업데이트 받기
-1. `git pull` (ZIP으로 받았다면 새로 받아 같은 폴더에 덮어쓰기).
-2. 플러그인을 다시 열고 **틀만 업데이트**를 누르면 바뀐 디자인이 내 파일의 틀과 이미 만든 장에 반영된다.
-
-## 쓰는 법
-1. 플러그인 창에 게시물 번호(예: `02`), 슬라이드 CSV, 캡션을 붙여 넣고 **카드뉴스 만들기**.
-2. `Carousels` 페이지 맨 아래에 `빅무브 #02 (N장)`과 `#02 캡션`이 생기고, 슬라이드가 선택된 상태가 된다.
-3. 오른쪽 Export → PNG 1x → Export. 파일 이름은 `bigmove-02-01.png`처럼 나온다.
-4. 이미지가 필요한 장은 `image=1`로 만들고, 만들기 전에 **이미지** 칸에서 파일을 고르면 파일 이름 순서대로 그 장들에 들어간다. 이미 만든 게시물은 선택 후 "이미지 한꺼번에 넣기".
-- CSV 아래에 빈 줄, `[캡션]` 줄, 캡션 순서로 한 번에 붙여 넣으면 캡션 칸이 자동으로 채워진다.
-
-## CSV 형식
-첫 줄은 머리글: `page,label,topic,title,sub,action,type,image`
-
-| 열 | 내용 | 비우면 |
-|---|---|---|
-| page | 장 번호 표시 (예: 1/7) | 순서대로 자동 |
-| label | 초록 칩 글자 | 빈칸 |
-| topic | 칩 옆 회색 글자 | 빈칸 |
-| title | 큰 제목 | 빈칸 |
-| sub | 본문 | 빈칸 |
-| action | 오른쪽 위 글자 | `넘겨 보기 →` (cta는 `저장해 두기`) |
-| type | `cover`(제목 크게) / `cta`(초록 바탕) / 빈칸(보통) | 보통 |
-| image | `1`이면 이미지 칸 표시 | 숨김 |
-
-- 줄바꿈: 칸 안에 `\n` 또는 따옴표로 감싼 실제 줄바꿈
-- 강조(초록 굵은 글씨): `[[강조할 말]]`
-- `page`나 `action`에 `-`를 넣으면 그 칸을 비운다 (스토리용)
-- **스토리 크기(1080×1920)** 체크: 위아래를 인스타 화면 요소 자리로 비운다
-- 쉼표가 들어간 칸은 큰따옴표로 감싼다
-- CSV는 메모장에서 복사해 붙여 넣는 게 가장 안전하다 (엑셀은 한글이 깨질 수 있음)
-
-예시: `example-01.csv`, `example-03.csv`
+`git pull` → Figma 플러그인 다시 열고 **틀만 업데이트** (바뀐 카드뉴스 디자인이 내 파일에 반영됨) → 영상 코드가 바뀌었으면 `reels-video`에서 `npm install`.

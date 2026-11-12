@@ -1,0 +1,6 @@
+node_modules/
+out/
+reels-video/node_modules/
+reels-video/out/
+reels-video/public/sfx/*.mp3
+reels-video/public/sfx/cut/
