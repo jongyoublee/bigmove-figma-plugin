@@ -1,0 +1,137 @@
+<style>
+  body { font: 12px sans-serif; margin: 12px; color: #3D3D3D; }
+  label { display: block; font-weight: bold; margin: 10px 0 4px; }
+  textarea { width: 100%; box-sizing: border-box; font: 11px monospace; }
+  input { width: 60px; }
+  button { margin-top: 12px; padding: 8px 14px; background: #54A329; color: #fff; border: 0; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  #msg { margin-top: 10px; white-space: pre-wrap; }
+  .hint { color: #8A8A8A; }
+  #presetBox { display: none; padding: 10px 12px; border: 2px solid #54A329; border-radius: 8px; background: #F3F9EE; }
+  #presetBox button { margin-top: 8px; }
+</style>
+<!--PRESET START--><!--PRESET END-->
+<div id="presetBox"><b>Claude가 준비한 게시물</b> <span id="presetInfo"></span><br><button id="goPreset">준비된 게시물 만들기</button></div>
+<label>게시물 번호 <input id="post" value="03"> <span style="font-weight:normal"><input type="checkbox" id="story" style="width:auto"> 스토리 크기(1080×1920)</span> <span style="font-weight:normal"><input type="checkbox" id="bumin" style="width:auto" checked> 부민 스타일</span></label>
+<label>슬라이드 CSV <span class="hint">(첫 줄은 머리글. 아래에 [캡션] 줄을 두면 그 밑은 캡션으로 들어가요)</span></label>
+<textarea id="csv" rows="14" placeholder="page,label,topic,title,sub,action,type,image"></textarea>
+<label>이미지 <span class="hint">(선택) image=1인 장에 파일 이름 순서대로 들어가요. 예) 02-..., 03-...</span></label>
+<input type="file" id="mkFiles" accept="image/png,image/jpeg,image/gif" multiple style="width:100%"> <div id="mkList" class="hint"></div>
+<label>캡션</label>
+<textarea id="caption" rows="8"></textarea>
+<button id="go">카드뉴스 만들기</button> <button id="style" style="background:#3D3D3D">틀만 업데이트</button> <button id="covers" style="background:#3D3D3D">하이라이트 커버</button>
+<br><button id="read" style="background:#fff;color:#54A329;border:2px solid #54A329">선택한 장 글자 가져오기</button> <button id="copy" style="background:#fff;color:#3D3D3D;border:2px solid #3D3D3D">Claude에게 넘길 내용 복사</button>
+<br><button id="imgs" style="background:#fff;color:#54A329;border:2px solid #54A329">이미지 한꺼번에 넣기</button> <span class="hint">게시물 선택 후, 파일 이름 순서대로 이미지 칸에 채워요</span>
+<input type="file" id="imgFiles" accept="image/png,image/jpeg,image/gif" multiple style="display:none">
+<br><button id="analyze" style="background:#fff;color:#2E5A17;border:2px solid #2E5A17">선택한 디자인 분석 (색·글꼴)</button> <button id="copyAn" style="background:#fff;color:#3D3D3D;border:2px solid #3D3D3D">분석 결과 복사</button>
+<div id="msg"></div>
+<textarea id="an" rows="6" readonly placeholder="분석 결과가 여기 나와요" style="margin-top:8px"></textarea>
+<script>
+  const readFiles = async (list) => {
+    const fs = Array.from(list).sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+    const out = [];
+    for (const f of fs) out.push({ name: f.name, bytes: Array.from(new Uint8Array(await f.arrayBuffer())) });
+    return out;
+  };
+  document.getElementById('mkFiles').onchange = (e) => {
+    const fs = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+    document.getElementById('mkList').textContent = fs.length ? fs.length + '개: ' + fs.map((f) => f.name).join(', ') : '';
+  };
+  document.getElementById('go').onclick = async () => {
+    document.getElementById('msg').textContent = '만드는 중...';
+    const files = await readFiles(document.getElementById('mkFiles').files);
+    // CSV 칸에 [캡션] 줄이 있으면 그 아래를 캡션으로 쓴다 (CSV와 캡션을 한 번에 붙여 넣기)
+    let csvText = document.getElementById('csv').value;
+    const mk = csvText.match(/^\s*\[캡션\]\s*$/m);
+    if (mk) {
+      document.getElementById('caption').value = csvText.slice(mk.index + mk[0].length).trim();
+      csvText = csvText.slice(0, mk.index).trim();
+      document.getElementById('csv').value = csvText;
+    }
+    csvText = csvText.replace(/^\s*\[[^\]\n]*CSV\]\s*\n/, '');
+    parent.postMessage({ pluginMessage: {
+      files,
+      post: document.getElementById('post').value.trim(),
+      csv: csvText,
+      caption: document.getElementById('caption').value,
+      story: document.getElementById('story').checked,
+      bumin: document.getElementById('bumin').checked
+    } }, '*');
+  };
+  // Claude가 make_preset.py로 넣어 둔 게시물 (없으면 이 칸은 안 보임). 아래 기존 붙여 넣기 방식은 그대로 쓸 수 있다.
+  const P = window.PRESET;
+  const b64bytes = (s) => Array.from(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+  if (P && P.kind === 'storyboard') {
+    document.getElementById('presetBox').style.display = 'block';
+    document.getElementById('presetInfo').textContent = '릴스 스토리보드 ' + P.boards.length + '개 (' + P.boards.map((b) => b.id).join(', ') + ') · 준비: ' + P.made;
+    document.getElementById('goPreset').textContent = '스토리보드 만들기 (릴스 스토리보드 페이지)';
+  } else if (P) {
+    document.getElementById('presetBox').style.display = 'block';
+    document.getElementById('presetInfo').textContent = '#' + P.post + ' · ' + P.slides + '장 · 이미지 ' + P.images.length + '개' + (P.story ? ' · 스토리 크기' : '') + ' (준비: ' + P.made + ')';
+    document.getElementById('post').value = P.post;
+    document.getElementById('csv').value = P.csv;
+    document.getElementById('caption').value = P.caption;
+    document.getElementById('story').checked = !!P.story;
+    document.getElementById('bumin').checked = P.bumin !== false;
+    document.getElementById('mkList').textContent = P.images.length ? '준비된 이미지 ' + P.images.length + '개: ' + P.images.map((f) => f.name).join(', ') : '';
+  }
+  document.getElementById('goPreset').onclick = () => {
+    if (P.kind === 'storyboard') {
+      document.getElementById('msg').textContent = '스토리보드 만드는 중...';
+      const boards = P.boards.map((b) => ({ title: b.title, note: b.note, scenes: b.scenes.map((s) => ({ name: s.name, note: s.note, file: { name: s.image.name, bytes: b64bytes(s.image.b64) } })) }));
+      parent.postMessage({ pluginMessage: { mode: 'storyboard', boards } }, '*');
+      return;
+    }
+    document.getElementById('msg').textContent = '준비된 게시물 만드는 중...';
+    const files = P.images.map((f) => ({ name: f.name, bytes: b64bytes(f.b64) }));
+    parent.postMessage({ pluginMessage: { files, post: P.post, csv: P.csv, caption: P.caption, story: !!P.story, bumin: P.bumin !== false } }, '*');
+  };
+  document.getElementById('style').onclick = () => {
+    document.getElementById('msg').textContent = '틀 업데이트 중...';
+    parent.postMessage({ pluginMessage: { mode: 'style', bumin: document.getElementById('bumin').checked } }, '*');
+  };
+  document.getElementById('covers').onclick = () => {
+    document.getElementById('msg').textContent = '커버 만드는 중...';
+    parent.postMessage({ pluginMessage: { mode: 'covers' } }, '*');
+  };
+  document.getElementById('read').onclick = () => {
+    document.getElementById('msg').textContent = '읽는 중...';
+    parent.postMessage({ pluginMessage: { mode: 'read' } }, '*');
+  };
+  document.getElementById('copy').onclick = () => {
+    const v = document.getElementById('csv').value;
+    const c = document.getElementById('caption').value;
+    const ta = document.createElement('textarea');
+    ta.value = '[Figma에서 읽은 슬라이드 CSV]\n' + v + (c ? '\n\n[캡션]\n' + c : '');
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    document.getElementById('msg').textContent = '복사했어요. Claude 대화창에 붙여 넣어 주세요.';
+  };
+  document.getElementById('analyze').onclick = () => {
+    document.getElementById('msg').textContent = '분석 중...';
+    parent.postMessage({ pluginMessage: { mode: 'analyze' } }, '*');
+  };
+  document.getElementById('copyAn').onclick = () => {
+    const ta = document.getElementById('an');
+    if (!ta.value) { document.getElementById('msg').textContent = '먼저 "선택한 디자인 분석"을 눌러 주세요.'; return; }
+    ta.removeAttribute('readonly'); ta.select(); document.execCommand('copy'); ta.setAttribute('readonly', '');
+    document.getElementById('msg').textContent = '복사했어요. Claude 대화창에 붙여 넣어 주세요.';
+  };
+  document.getElementById('imgs').onclick = () => document.getElementById('imgFiles').click();
+  document.getElementById('imgFiles').onchange = async (e) => {
+    const fs = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+    if (!fs.length) return;
+    document.getElementById('msg').textContent = '이미지 넣는 중... (' + fs.map((f) => f.name).join(', ') + ')';
+    const files = [];
+    for (const f of fs) files.push({ name: f.name, bytes: Array.from(new Uint8Array(await f.arrayBuffer())) });
+    parent.postMessage({ pluginMessage: { mode: 'images', files } }, '*');
+    e.target.value = '';
+  };
+  onmessage = (e) => {
+    const m = e.data.pluginMessage;
+    if (m && m.read) {
+      document.getElementById('csv').value = m.read.csv;
+      document.getElementById('caption').value = m.read.caption;
+    }
+    if (m && m.analyze) document.getElementById('an').value = m.analyze;
+    if (m && m.msg) document.getElementById('msg').textContent = m.msg;
+  };
+</script>
